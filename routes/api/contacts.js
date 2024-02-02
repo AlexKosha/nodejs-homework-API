@@ -1,6 +1,7 @@
 const express = require("express");
 const contacts = require("../../models/contacts");
 const contactShema = require("../../helpers/contactValidator");
+const verificationId = require("../../helpers/verificationId");
 
 const router = express.Router();
 
@@ -23,6 +24,11 @@ router.get("/", async (req, res, next) => {
 
 router.get("/:contactId", async (req, res, next) => {
   const { contactId } = req.params;
+
+  if (!verificationId(contactId)) {
+    return res.status(404).json({ message: "Not found" });
+  }
+
   const contact = await contacts.getContactById(contactId);
 
   if (contact) {
@@ -45,6 +51,11 @@ router.post(
 
 router.delete("/:contactId", async (req, res, next) => {
   const { contactId } = req.params;
+
+  if (!verificationId(contactId)) {
+    return res.status(404).json({ message: "Not found" });
+  }
+
   const removedContact = await contacts.removeContact(contactId);
   if (removedContact) {
     return res.status(200).json({
@@ -61,6 +72,11 @@ router.put(
   async (req, res, next) => {
     const { contactId } = req.params;
     const { body } = req;
+
+    if (!verificationId(contactId)) {
+      return res.status(404).json({ message: "Not found" });
+    }
+
     if (!body || Object.keys(body).length === 0) {
       return res.status(400).json({ message: "missing fields" });
     }
@@ -81,6 +97,10 @@ router.patch(
   async (req, res) => {
     const { contactId } = req.params;
     const { body } = req;
+
+    if (!verificationId(contactId)) {
+      return res.status(404).json({ message: "Not found" });
+    }
 
     const updateStatus = await contacts.updateStatusContact(contactId, body);
 

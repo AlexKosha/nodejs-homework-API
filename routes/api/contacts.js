@@ -1,115 +1,36 @@
 const express = require("express");
-const contacts = require("../../models/contacts");
-const contactShema = require("../../helpers/contactValidator");
-const verificationId = require("../../helpers/verificationId");
-
+const { contactValidator } = require("../../helpers");
+const { validateBody, authenticate, isValidId } = require("../../middlewares");
+const ctrl = require("../../controllers/contacts");
 const router = express.Router();
 
-const validateContact = (schema) => async (req, res, next) => {
-  const { body } = req;
+router.get("/", authenticate, ctrl.getContacts);
 
-  try {
-    await schema.validateAsync(body, { abortEarly: false });
-    next();
-  } catch (error) {
-    const errorMessages = error.details.map((detail) => detail.message);
-    res.status(400).json({ message: errorMessages[0] });
-  }
-};
-
-router.get("/", async (req, res, next) => {
-  const data = await contacts.listContacts();
-  res.status(200).json(data);
-});
-
-router.get("/:contactId", async (req, res, next) => {
-  const { contactId } = req.params;
-
-  if (!verificationId(contactId)) {
-    return res.status(404).json({ message: "Not found" });
-  }
-
-  const contact = await contacts.getContactById(contactId);
-
-  if (contact) {
-    res.status(200).json(contact);
-  } else {
-    res.status(404).json({ message: "Not found" });
-  }
-});
+router.get("/:contactId", authenticate, isValidId, ctrl.getContactById);
 
 router.post(
   "/",
-  validateContact(contactShema.postContactSchema),
-  async (req, res, next) => {
-    const { body } = req;
-
-    const newContact = await contacts.addContact(body);
-    return res.status(201).json(newContact);
-  }
+  authenticate,
+  validateBody(contactValidator.postContactSchema),
+  ctrl.add
 );
 
-router.delete("/:contactId", async (req, res, next) => {
-  const { contactId } = req.params;
-
-  if (!verificationId(contactId)) {
-    return res.status(404).json({ message: "Not found" });
-  }
-
-  const removedContact = await contacts.removeContact(contactId);
-  if (removedContact) {
-    return res.status(200).json({
-      message: "contact deleted",
-    });
-  } else {
-    return res.status(404).json({ message: "Not found" });
-  }
-});
+router.delete("/:contactId", authenticate, isValidId, ctrl.deleteContact);
 
 router.put(
   "/:contactId",
-  validateContact(contactShema.putContactSchema),
-  async (req, res, next) => {
-    const { contactId } = req.params;
-    const { body } = req;
-
-    if (!verificationId(contactId)) {
-      return res.status(404).json({ message: "Not found" });
-    }
-
-    if (!body || Object.keys(body).length === 0) {
-      return res.status(400).json({ message: "missing fields" });
-    }
-
-    const updatedContact = await contacts.updateContact(contactId, body);
-
-    if (updatedContact) {
-      return res.status(200).json(updatedContact);
-    } else {
-      return res.status(404).json({ message: "Not found" });
-    }
-  }
+  authenticate,
+  validateBody(contactValidator.putContactSchema),
+  isValidId,
+  ctrl.updateById
 );
 
 router.patch(
   "/:contactId/favorite",
-  validateContact(contactShema.patchContactSchema),
-  async (req, res) => {
-    const { contactId } = req.params;
-    const { body } = req;
-
-    if (!verificationId(contactId)) {
-      return res.status(404).json({ message: "Not found" });
-    }
-
-    const updateStatus = await contacts.updateStatusContact(contactId, body);
-
-    if (updateStatus) {
-      return res.status(200).json(updateStatus);
-    } else {
-      return res.status(404).json({ message: "Not found" });
-    }
-  }
+  authenticate,
+  validateBody(contactValidator.patchContactSchema),
+  isValidId,
+  ctrl.updateFavorite
 );
 
 module.exports = router;

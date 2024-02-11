@@ -104,6 +104,10 @@ const updateSubscription = async (req, res) => {
 const updateAvatar = async (req, res) => {
   const { _id } = req.user;
 
+  if (!req.file) {
+    throw HttpError(400, "File is required ");
+  }
+
   const { path: tempUpload, originalname } = req.file;
 
   const filename = `${_id}_${originalname}`;
@@ -113,7 +117,9 @@ const updateAvatar = async (req, res) => {
 
   image.resize(avatarWidth, avatarHeight);
 
-  await fs.rename(tempUpload, resultUpload);
+  await image.writeAsync(resultUpload);
+
+  await fs.unlink(tempUpload);
 
   const avatarURL = path.join("avatars", filename);
 

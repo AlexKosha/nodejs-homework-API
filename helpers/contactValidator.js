@@ -1,13 +1,7 @@
 const Joi = require("joi");
 
-// const contactShema = Joi.object({
-//   name: Joi.string().required(),
-//   email: Joi.string().email().required(),
-//   phone: Joi.string().required(),
-// });
-
 const postContactSchema = Joi.object({
-  name: Joi.string().required().messages({
+  name: Joi.string().min(3).required().messages({
     "string.base": "Name must be a string",
     "string.empty": "Name cannot be empty",
     "any.required": "missing required name field",
@@ -27,10 +21,11 @@ const postContactSchema = Joi.object({
       "string.empty": "Phone cannot be empty",
       "any.required": "missing required phone field",
     }),
+  favorite: Joi.bool(),
 });
 
 const putContactSchema = Joi.object({
-  name: Joi.string().messages({
+  name: Joi.string().min(3).messages({
     "string.base": "Name must be a string",
     "string.empty": "Name cannot be empty",
   }),
@@ -48,7 +43,12 @@ const putContactSchema = Joi.object({
     }),
 });
 
+const patchContactSchema = Joi.object({
+  favorite: Joi.bool().required(),
+});
+
 module.exports = {
   postContactSchema,
   putContactSchema,
+  patchContactSchema,
 };

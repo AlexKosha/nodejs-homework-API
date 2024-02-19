@@ -1,65 +1,30 @@
-const fs = require("fs/promises");
-const path = require("path");
-const { nanoid } = require("nanoid");
-const contactsPath = path.join(__dirname, "contacts.json");
+const { Schema, model } = require("mongoose");
 
-const listContacts = async () => {
-  const contacts = await fs.readFile(contactsPath);
-  return JSON.parse(contacts);
-};
+const contactSchema = new Schema(
+  {
+    name: {
+      type: String,
+      required: [true, "Set name for contact"],
+    },
+    email: {
+      type: String,
+    },
+    phone: {
+      type: String,
+    },
+    favorite: {
+      type: Boolean,
+      default: false,
+    },
+    owner: {
+      type: Schema.Types.ObjectId,
+      ref: "user",
+      required: true,
+    },
+  },
+  { versionKey: false }
+);
 
-const getContactById = async (contactId) => {
-  const contacts = await listContacts();
-  const results = contacts.find((contact) => contact.id === contactId);
-  return results || null;
-};
+const Contacts = model("contacts", contactSchema, "contacts");
 
-const removeContact = async (contactId) => {
-  const contacts = await listContacts();
-  const index = contacts.findIndex((contact) => contact.id === contactId);
-  if (index === -1) {
-    return null;
-  }
-
-  const results = contacts.splice(index, 1);
-  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
-  return results;
-};
-
-const addContact = async (body) => {
-  const contacts = await listContacts();
-
-  const newContact = {
-    id: nanoid(),
-    ...body,
-  };
-
-  contacts.push(newContact);
-  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
-  return newContact;
-};
-
-const updateContact = async (contactId, body) => {
-  const contacts = await listContacts();
-  const index = contacts.findIndex((contact) => contact.id === contactId);
-
-  if (index === -1) {
-    return null;
-  }
-
-  contacts[index] = {
-    ...contacts[index],
-    ...body,
-  };
-
-  await fs.writeFile(contactsPath, JSON.stringify(contacts, null, 2));
-  return contacts[index];
-};
-
-module.exports = {
-  listContacts,
-  getContactById,
-  removeContact,
-  addContact,
-  updateContact,
-};
+module.exports = Contacts;
